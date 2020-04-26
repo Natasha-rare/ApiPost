@@ -1,16 +1,22 @@
 from flask import Flask, render_template, redirect, request, make_response, session, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required
-
-import jobs_api
+from flask_restful import Api
+from requests import get
+import requests
+import users_api
 from loginform import LoginForm, JobsForm
 from data import db_session
 from data.users import User
 from data.jobs import Jobs
-
+from data.users_resource import UsersResource, UsersListResource
+from jobs_resource import JobsListResource,JobsResource
 app = Flask(__name__)
+api = Api(app)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -19,48 +25,23 @@ def load_user(user_id):
 
 @app.errorhandler(404)
 def not_found(error):
-    return make_response(jsonify({'error': 'Not jjjfound'}), 404)
+    return make_response(jsonify({'error': 'Not found'}), 404)
+
 
 def main():
-    db_session.global_init("db/mars_explorer.sqlite")
-    app.register_blueprint(jobs_api.blueprint)
-    # user = User()
-    # user.surname = "Scott"
-    # user.name = "Ridley"
-    # user.age = 21
-    # user.position = "captain"
-    # user.speciality = "research engineer"
-    # user.address = "module_1"
-    # user.email = "scott_chief@mars.org"
-    # user.hashed_password = "cap"
-    # user.set_password(user.hashed_password)
-    # session = db_session.create_session()
-    # session.add(user)
-    # session.commit()
+    db_session.global_init("db/blogs.sqlite")
+    app.register_blueprint(users_api.blueprint)
+    # для списка объектов
+    api.add_resource(UsersListResource, '/api/v2/users')
 
-    # user = User()
-    # user.surname = "Sun"
-    # user.name = "Rules"
-    # user.age = 34
-    # user.position = "marsohod"
-    # user.speciality = "engineer"
-    # user.address = "module_2"
-    # user.email = "sun_chief@mars.org"
-    # user.hashed_password = "mars"
-    # session = db_session.create_session()
-    # session.add(user)
-    # session.commit()
-    #
-    jobs = Jobs()
-    jobs.team_leader = 2
-    jobs.job = 'deployment of residential modules 1 and 2'
-    jobs.work_size = 15
-    jobs.collaborators = '2, 3'
-    session = db_session.create_session()
-    session.add(jobs)
-    session.commit()
+    api.add_resource(UsersResource, '/api/v2/users/<int:user_id>')
+
+    api.add_resource(JobsListResource, '/api/v2/jobs')
+
+    api.add_resource(JobsResource, '/api/v2/jobs/<int:job_id>')
 
     app.run()
+
 
 @app.route('/')
 @app.route('/index')
@@ -72,6 +53,7 @@ def index():
         print(jobs)
     session.commit()
     return render_template('index.html', jobs=jobs)
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -86,6 +68,30 @@ def login():
                                message="Неправильный логин или пароль",
                                form=form)
     return render_template('login.html', title='Авторизация', form=form)
+
+
+@app.route('/users_show/<int:user_id>')
+def users_show(user_id):
+    map_api_server = 'http://static-maps.yandex.ru/1.x/?&spn=0.05,0.05&l=sat'
+    print(f'http://localhost:5000/api/v2/users/{user_id}')
+    a = get(f'http://localhost:5000/api/v2/users/{user_id}').json()
+    a = a['user']
+    geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
+    geocoder_params = {
+        "apikey": "40d1649f-0493-4b70-98ba-98533de7710b",
+        "geocode": a['city_from'],
+        "format": "json"}
+
+    response = requests.get(geocoder_api_server, params=geocoder_params)
+    if response:
+        json_response = response.json()
+        # Получаем первый топоним из ответа геокодера.
+        toponym = json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
+        toponym_coodrinates = toponym["Point"]["pos"].split()
+        map_api_server += f'&ll={toponym_coodrinates[0]},{toponym_coodrinates[1]}'
+        return render_template('maps.html', title='Карта', api=map_api_server, city=a['city_from'], name=a['name'], surname=a['surname'])
+    return redirect("/")
+
 
 @app.route('/addjob', methods=['GET', 'POST'])
 def addjob():
@@ -102,6 +108,7 @@ def addjob():
 def logout():
     logout_user()
     return redirect("/")
+
 
 if __name__ == '__main__':
     main()

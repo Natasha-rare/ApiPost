@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Nostalgy</h1>
+<h1>{{name}} {{surname}}</h1>
+<h2>Hometown {{ city }}</h2>
+<img src="{{ api }}" class="rounded mx-auto d-block" style="width: 40rem;" alt="Карта">
+{% endblock %}

@@ -1,20 +1,10 @@
 from requests import get, post
 
-#print(get('http://localhost:5000/api/jobs').json())
 
-#print(get('http://localhost:5000/api/jobs/2').json())
-
-#print(get('http://localhost:5000/api/jobs/999').json())
-# новости с id = 999 нет в базе
-
-#print(get('http://localhost:5000/api/jobs/q').json())
-
-# task 6
-
-print(post('http://localhost:5000/api/jobs',
-           json={'id': 10, 'job': 'installation of radiation protection'}).json())  # not full list of characters
-print(post('http://localhost:5000/api/jobs').json())  # empty request
-print(post('http://localhost:5000/api/jobs',
-           json={'id': 10, 'job': 'installing a long-distance communication antenna', 'team_leader': 4, 'work_size': 23,
-                 'collaborators': '6, 3, 8', 'category': 3, 'is_finished': True}).json())  # cool request
-print(get('http://localhost:5000/api/jobs').json())
+print(post('http://localhost:5000/api/v2/users',
+           json={'name': 'Ivan', 'surname': 'Best', 'email':'123@1.c',
+                 'age': 30, 'position': 'special', 'speciality': 'doctor',
+                 'address': 'absd', 'city_from': 'Moscow', 'hashed_password': '1234'}).json())
+print(post('http://localhost:5000/api/v2/users',
+           json={'name': 'nac'}).json())
+print(get('http://localhost:5000/api/v2/users/1').json())
